@@ -177,9 +177,7 @@ void update(status* game)
     int x=game->head->x;
     int y=game->head->y;   
     
-    /* read requested direction (non-blocking); keep previous to prevent immediate reverse */
-    char prev_dir = game->direction;
-
+    /* read requested direction (non-blocking); check for immediate reverse */
     /* poll stdin for available input */
     int c = -1;
     fd_set rfds;
@@ -210,29 +208,48 @@ void update(status* game)
         }
     }
 
-    if (c != -1) game->direction = (char)c;
+    /* Accept new direction only if it's not immediately opposite to current direction */
+    if (c != -1) {
+        char new_dir = (char)c;
+        int is_opposite = 0;
+        
+        /* check if new_dir is opposite to current direction */
+        if ((game->direction == 'w' || game->direction == 'W') && (new_dir == 's' || new_dir == 'S'))
+            is_opposite = 1;
+        else if ((game->direction == 's' || game->direction == 'S') && (new_dir == 'w' || new_dir == 'W'))
+            is_opposite = 1;
+        else if ((game->direction == 'a' || game->direction == 'A') && (new_dir == 'd' || new_dir == 'D'))
+            is_opposite = 1;
+        else if ((game->direction == 'd' || game->direction == 'D') && (new_dir == 'a' || new_dir == 'A'))
+            is_opposite = 1;
+        
+        /* only accept if not opposite */
+        if (!is_opposite) {
+            game->direction = new_dir;
+        }
+    }
 
     //move the snake
     switch (game->direction) {
         case 'w':
         case 'W':
             /* move up: decrease x (row) */
-            if (!(prev_dir=='s' || prev_dir=='S')) x--;
+            x--;
             break;
         case 's':
         case 'S':
             /* move down: increase x (row) */
-            if (!(prev_dir=='w' || prev_dir=='W')) x++;
+            x++;
             break;
         case 'a':
         case 'A':
             /* move left: decrease y (col) */
-            if (!(prev_dir=='d' || prev_dir=='D')) y--;
+            y--;
             break;
         case 'd':
         case 'D':
             /* move right: increase y (col) */
-            if (!(prev_dir=='a' || prev_dir=='A')) y++;
+            y++;
             break;
         case 'q':
         case 'Q':
